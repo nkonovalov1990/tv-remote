@@ -1,4 +1,4 @@
-// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing).
+// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing), R13-R16 (state call).
 import Testing
 import Foundation
 import Synchronization
@@ -124,4 +124,19 @@ private let hasAdb = ["/opt/homebrew/bin/adb", "/usr/local/bin/adb",
 @Test("R3: live runner executes adb version", .enabled(if: hasAdb))
 func liveVersion() async throws {
     #expect(try await ADB.live.run(["version"]).contains("Android Debug Bridge"))
+}
+
+@Test("R13-R16: state runs one shell call and parses the output")
+func stateCall() async throws {
+    let f = Fake(["  mWakefulness=Awake\n[V] volume is 7 in range [0..100]"])
+    let s = try await f.adb.state(host: "192.168.1.5")
+    #expect(f.recorded == [["-s", "192.168.1.5:5555", "shell", ADB.stateCommand]])
+    #expect(s.awake == true && s.volume == 7)
+}
+
+@Test("R6: state with invalid host throws without calling adb")
+func stateInvalidHost() async {
+    let f = Fake()
+    await #expect(throws: ADBError.self) { try await f.adb.state(host: "-H") }
+    #expect(f.recorded.isEmpty)
 }

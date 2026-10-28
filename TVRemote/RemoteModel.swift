@@ -9,9 +9,10 @@ final class RemoteModel {
     var tab: Tab { didSet { defaults.set(tab.rawValue, forKey: "tab") } }
     var status = "Не подключено"
     var isConnected = false
+    var tv: TVState?
     @ObservationIgnored private let adb: ADB
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private var last: Task<Void, Never>?
+    @ObservationIgnored private var last: Task<Bool, Never>?
 
     init(adb: ADB = .live, defaults: UserDefaults = .standard) {
         self.adb = adb
@@ -34,15 +35,22 @@ final class RemoteModel {
         }
     }
 
+    // R17: a failed poll only blanks the extras; connection status is the user's, not the poll's.
+    func refresh() async {
+        guard isConnected else { return }
+        tv = try? await adb.state(host: host)
+    }
+
     // Each press awaits the previous one so rapid taps reach the TV in order.
     func press(_ key: Key) async {
         let prev = last
         let t = Task {
-            await prev?.value
-            do { try await adb.press(key, host: host) } catch { status = Self.error(error.localizedDescription) }
+            _ = await prev?.value
+            do { try await adb.press(key, host: host); return true } catch { status = Self.error(error.localizedDescription); return false }
         }
         last = t
-        await t.value
+        // Refresh outside the chain so a ~0.4 s poll never delays the next keyevent.
+        if await t.value { await refresh() }
     }
 }
 

@@ -1,0 +1,9 @@
+  mWakefulness=Awake
+  mCurrentFocus=Window{7febc83 u0 com.google.android.apps.tv.launcherx/com.google.android.apps.tv.launcherx.home.HomeActivity}
+[V] will control stream=3 (STREAM_MUSIC)
+[V] will get volume
+[V] Connecting to AudioService
+[V] volume is 22 in range [0..100]
+      package=com.android.bluetooth
+      state=PlaybackState {state=7, position=0, buffered position=0, speed=0.0, updated=537982173, actions=0, custom actions=[], active item id=-1, error=Звук через Bluetooth отключен}
+      metadata: null

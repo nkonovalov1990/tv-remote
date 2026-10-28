@@ -86,7 +86,13 @@ struct ContentView: View {
         .focused($focus, equals: .pad)
         .focusEffectDisabled()
         .onAppear { focus = .pad }
-        .task { await model.connectIfSaved() } // R10
+        .task { // R10 connect first, then R17 poll; cancelled when the popover closes
+            await model.connectIfSaved()
+            while !Task.isCancelled {
+                await model.refresh()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
         .onKeyPress(phases: [.down, .repeat]) { p in // R5'; ignored while typing the IP
             guard focus != .host, let key = shortcut(p.key) else { return .ignored }
             Task { await model.press(key) }
@@ -96,9 +102,10 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Circle().fill(model.isConnected ? Color.green : Color.orange).frame(width: 8, height: 8)
-                .accessibilityHidden(true)
-            Text(model.host.isEmpty ? "Телевизор не выбран" : model.host)
+            let asleep = model.isConnected && model.tv?.awake == false // R13
+            Circle().fill(!model.isConnected ? Color.orange : asleep ? Color.secondary : Color.green).frame(width: 8, height: 8)
+                .accessibilityLabel(!model.isConnected ? "Нет связи" : asleep ? "ТВ спит" : "ТВ включён")
+            Text(model.tv?.appName ?? (model.host.isEmpty ? "Телевизор не выбран" : model.host)) // R14
                 .font(.subheadline.weight(.semibold))
             Spacer()
             Button { showSettings.toggle() } label: { Image(systemName: "gearshape") }
@@ -126,17 +133,27 @@ struct ContentView: View {
     }
 
     private var media: some View {
-        VStack(spacing: 12) {
+        let tv = model.tv
+        return VStack(spacing: 12) {
             Button { Task { await model.press(.playPause) } } label: {
                 RoundedRectangle(cornerRadius: 20).fill(accent)
-                    .overlay(Image(systemName: "playpause.fill").font(.system(size: 40)).foregroundStyle(.white))
+                    .overlay(VStack(spacing: 6) { // R16
+                        Image(systemName: tv?.playing.map { $0 ? "pause.fill" : "play.fill" } ?? "playpause.fill").font(.system(size: 40))
+                        if let t = tv?.title { Text(t).font(.system(size: 13)).lineLimit(1).truncationMode(.tail).padding(.horizontal, 16) }
+                    }.foregroundStyle(.white))
                     .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
             }
             .buttonStyle(Press())
             .help("Пауза / воспроизведение (пробел)").accessibilityLabel("Пауза / воспроизведение")
             HStack(spacing: 0) {
-                key(.volumeDown, "speaker.minus", "Громкость меньше", size: 40, shape: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20))
-                key(.volumeUp, "speaker.plus", "Громкость больше", size: 40, shape: UnevenRoundedRectangle(bottomTrailingRadius: 20, topTrailingRadius: 20))
+                key(.volumeDown, "speaker.minus", "Громкость меньше", size: 40, shape: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20), value: tv?.volume)
+                key(.volumeUp, "speaker.plus", "Громкость больше", size: 40, shape: UnevenRoundedRectangle(bottomTrailingRadius: 20, topTrailingRadius: 20), value: tv?.volume)
+            }
+            .overlay { // R15: sits on the divider between − and +
+                if let v = tv?.volume {
+                    Text("\(v)").font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 6).background(surface).allowsHitTesting(false)
+                }
             }
         }
     }
@@ -166,7 +183,7 @@ struct ContentView: View {
 
     /// The repeated key look: surface fill + hairline border, icon aligned inside; only the shape is hit-testable.
     private func key<S: Shape>(_ k: Key, _ symbol: String, _ label: String, size: CGFloat = 22,
-                               tint: Color = .primary, shape: S, align: Alignment = .center, inset: CGFloat = 0) -> some View {
+                               tint: Color = .primary, shape: S, align: Alignment = .center, inset: CGFloat = 0, value: Int? = nil) -> some View {
         Button { Task { await model.press(k) } } label: {
             shape.fill(surface)
                 .overlay(shape.stroke(Color(nsColor: .separatorColor)))
@@ -175,7 +192,7 @@ struct ContentView: View {
                 .contentShape(shape)
         }
         .buttonStyle(Press())
-        .help(label).accessibilityLabel(label)
+        .help(label).accessibilityLabel(label).accessibilityValue(value.map(String.init) ?? "")
     }
 
     private func shortcut(_ k: KeyEquivalent) -> Key? {

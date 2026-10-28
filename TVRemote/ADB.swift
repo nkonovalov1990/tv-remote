@@ -44,6 +44,19 @@ struct ADB: Sendable {
         if out.localizedCaseInsensitiveContains("error") { throw ADBError(errorDescription: out.trimmingCharacters(in: .whitespacesAndNewlines)) }
     }
 
+    // `grep -m1` makes the dumps print "Broken pipe" noise, and PlaybackState contains "error=", so output is never an error.
+    static let stateCommand = [
+        "dumpsys power | grep -m1 mWakefulness=",
+        "dumpsys window | grep -m1 mCurrentFocus",
+        "cmd media_session volume --stream 3 --get",
+        "dumpsys media_session | grep -E 'package=|state=PlaybackState|metadata:'",
+    ].joined(separator: "; ")
+
+    func state(host: String) async throws -> TVState {
+        guard Self.isValidHost(host) else { throw ADBError(errorDescription: "invalid host") }
+        return TVState(parsing: try await run(["-s", serial(host), "shell", Self.stateCommand]))
+    }
+
     static let live = ADB { args in
         let candidates = ["/opt/homebrew/bin/adb", "/usr/local/bin/adb",
                           NSString("~/Library/Android/sdk/platform-tools/adb").expandingTildeInPath]

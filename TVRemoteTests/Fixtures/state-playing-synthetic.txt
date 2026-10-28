@@ -1,0 +1,14 @@
+  mWakefulness=Awake
+Failed to write while dumping service power: Broken pipe
+  mCurrentFocus=Window{1a2b3c4 u0 com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.ShellActivity}
+Failed to write while dumping service window: Broken pipe
+[V] will control stream=3 (STREAM_MUSIC)
+[V] will get volume
+[V] Connecting to AudioService
+[V] volume is 35 in range [0..100]
+      package=com.google.android.youtube.tv
+      state=PlaybackState {state=3, position=81234, buffered position=0, speed=1.0, updated=541000000, actions=3669, custom actions=[], active item id=-1, error=null}
+      metadata: size=6, description=Lo-fi beats to relax, Lofi Girl, null
+      package=com.android.bluetooth
+      state=PlaybackState {state=7, position=0, buffered position=0, speed=0.0, updated=537982173, actions=0, custom actions=[], active item id=-1, error=Звук через Bluetooth отключен}
+      metadata: null

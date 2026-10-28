@@ -1,4 +1,4 @@
-// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected), R11 (Local Network hint).
+// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected), R11 (Local Network hint), R17 (refresh).
 import Testing
 import Foundation
 import Synchronization
@@ -146,4 +146,74 @@ func pressNoRouteHint() async {
     m.host = "192.168.1.5"
     await m.press(.ok)
     #expect(m.status == localNetworkHint)
+}
+
+private let stateOut = "  mWakefulness=Awake\n[V] volume is 9 in range [0..100]"
+
+@MainActor private func connected(_ outputs: [String]) async -> (RemoteModel, Fake) {
+    let f = Fake(["connected to 192.168.1.5:5555", "device"] + outputs)
+    let m = make(f)
+    m.host = "192.168.1.5"
+    await m.connect()
+    return (m, f)
+}
+
+@MainActor @Test("R17: refresh is skipped when not connected")
+func refreshSkipped() async {
+    let f = Fake()
+    let m = make(f)
+    m.host = "192.168.1.5"
+    await m.refresh()
+    #expect(f.recorded.isEmpty && m.tv == nil)
+}
+
+@MainActor @Test("R17: refresh sets tv")
+func refreshSetsTV() async {
+    let (m, _) = await connected([stateOut])
+    await m.refresh()
+    #expect(m.tv?.volume == 9)
+}
+
+@MainActor @Test("R17: refresh error clears tv but leaves status and connection alone")
+func refreshErrorKeepsStatus() async {
+    let calls = Mutex(0)
+    let adb = ADB { args in
+        if args.contains("shell") { throw Boom() }
+        return calls.withLock { $0 += 1; return $0 } == 1 ? "connected to 192.168.1.5:5555" : "device"
+    }
+    let m = RemoteModel(adb: adb, defaults: UserDefaults(suiteName: UUID().uuidString)!)
+    m.host = "192.168.1.5"
+    await m.connect()
+    m.tv = TVState(volume: 1)
+    await m.refresh()
+    #expect(m.tv == nil)
+    #expect(m.status == "Подключено" && m.isConnected)
+}
+
+@MainActor @Test("R17: successful press triggers a state refresh right after the keyevent")
+func pressRefreshes() async {
+    let (m, f) = await connected(["", stateOut])
+    await m.press(.volumeUp)
+    #expect(f.recorded.count == 4)
+    #expect(f.recorded[2].last == "24")
+    #expect(f.recorded[3].last == ADB.stateCommand)
+    #expect(m.tv?.volume == 9)
+}
+
+@MainActor @Test("R17: the state refresh after a press does not hold back the next keyevent")
+func refreshDoesNotDelayNextPress() async {
+    let start = ContinuousClock.now
+    let downAt = Mutex<Duration?>(nil)
+    let adb = ADB { args in
+        if args.last == ADB.stateCommand { try await Task.sleep(for: .milliseconds(400)) }
+        if args.last == "20" { downAt.withLock { $0 = ContinuousClock.now - start } }
+        return args.first == "connect" ? "connected to 192.168.1.5:5555" : (args.last == "get-state" ? "device" : "")
+    }
+    let m = RemoteModel(adb: adb, defaults: UserDefaults(suiteName: UUID().uuidString)!)
+    m.host = "192.168.1.5"
+    await m.connect()
+    let a = Task { await m.press(.up) }
+    let b = Task { await m.press(.down) }
+    await a.value; await b.value
+    #expect(downAt.withLock { $0 }! < .milliseconds(300))
 }

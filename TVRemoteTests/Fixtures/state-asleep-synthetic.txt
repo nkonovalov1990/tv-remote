@@ -1,0 +1,7 @@
+  mWakefulness=Asleep
+Failed to write while dumping service power: Broken pipe
+  mCurrentFocus=null
+[V] will control stream=3 (STREAM_MUSIC)
+[V] will get volume
+[V] Connecting to AudioService
+[V] volume is 22 in range [0..100]
