@@ -1,4 +1,4 @@
-// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected).
+// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected), R11 (Local Network hint).
 import Testing
 import Foundation
 import Synchronization
@@ -128,4 +128,22 @@ func notConnectedOnFailure() async {
     m.host = "192.168.1.5"
     await m.connect()
     #expect(!m.isConnected)
+}
+
+private let localNetworkHint = "macOS блокирует локальную сеть: Настройки → Конфиденциальность и безопасность → Локальная сеть → включите TV Remote"
+
+@MainActor @Test("R11: 'No route to host' on connect => Local Network hint")
+func connectNoRouteHint() async {
+    let m = make(Fake(["failed to connect to '192.168.1.5:5555': No route to host"]))
+    m.host = "192.168.1.5"
+    await m.connect()
+    #expect(m.status == localNetworkHint)
+}
+
+@MainActor @Test("R11: 'No route to host' on press => Local Network hint")
+func pressNoRouteHint() async {
+    let m = make(Fake(["error: device '192.168.1.5:5555' not found; No route to host"]))
+    m.host = "192.168.1.5"
+    await m.press(.ok)
+    #expect(m.status == localNetworkHint)
 }

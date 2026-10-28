@@ -10,6 +10,11 @@ xcodegen generate
 xcodebuild test -project TVRemote.xcodeproj -scheme TVRemote -destination 'platform=macOS,arch=arm64'
 open TVRemote.xcodeproj   # ⌘R
 ```
+
+Установка в «Программы» (Launchpad, Spotlight):
+```bash
+xcodebuild build -project TVRemote.xcodeproj -scheme TVRemote -configuration Release -derivedDataPath build -quiet && ditto build/Build/Products/Release/TVRemote.app "/Applications/TV Remote.app"
+```
 На ТВ один раз: режим разработчика → «Отладка по сети»; при первом подключении нажать «Разрешить».
 
 ## Процесс

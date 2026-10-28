@@ -7,7 +7,9 @@ settings:
     SWIFT_VERSION: "6.0"
     ENABLE_APP_SANDBOX: NO
     ENABLE_HARDENED_RUNTIME: NO
-    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_IDENTITY: "Apple Development"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: FB52TKY2U5 # ADR-0003: stable signature keeps the Local Network permission
     GENERATE_INFOPLIST_FILE: NO
 targets:
   TVRemote:
@@ -18,6 +20,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.nikita.tvremote
         INFOPLIST_FILE: TVRemote/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   TVRemoteTests:
     type: bundle.unit-test
     platform: macOS

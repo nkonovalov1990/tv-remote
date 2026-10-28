@@ -30,7 +30,7 @@ final class RemoteModel {
         switch await adb.connect(host) {
         case .connected: status = "Подключено"; isConnected = true
         case .unauthorized: status = "Разрешите подключение на ТВ и нажмите «Подключить» ещё раз"
-        case .failed(let m): status = "Ошибка: \(m)"
+        case .failed(let m): status = Self.error(m)
         }
     }
 
@@ -39,9 +39,18 @@ final class RemoteModel {
         let prev = last
         let t = Task {
             await prev?.value
-            do { try await adb.press(key, host: host) } catch { status = "Ошибка: \(error.localizedDescription)" }
+            do { try await adb.press(key, host: host) } catch { status = Self.error(error.localizedDescription) }
         }
         last = t
         await t.value
+    }
+}
+
+extension RemoteModel {
+    // R11: EHOSTUNREACH while the TV answers ping = macOS Local Network privacy blocking adb.
+    static func error(_ m: String) -> String {
+        m.contains("No route to host")
+            ? "macOS блокирует локальную сеть: Настройки → Конфиденциальность и безопасность → Локальная сеть → включите TV Remote"
+            : "Ошибка: \(m)"
     }
 }
