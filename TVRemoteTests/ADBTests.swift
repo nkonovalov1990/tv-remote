@@ -1,4 +1,4 @@
-// Covers R3 (connect + auth check), R4 (key codes / press), R6 (host validation), R7 (error surfacing).
+// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing).
 import Testing
 import Foundation
 import Synchronization
@@ -22,12 +22,12 @@ final class Fake: Sendable {
 
 struct Boom: LocalizedError { var errorDescription: String? { "boom" } }
 
-@Test("R4: key codes match Android KEYCODE values")
+@Test("R4p: key codes match Android KEYCODE values; removed keys are gone")
 func keyCodes() {
     #expect(Key.power.rawValue == 26)
     #expect(Key.ok.rawValue == 23)
-    #expect(Key.mute.rawValue == 164)
-    #expect(Key.settings.rawValue == 176)
+    #expect(Key.playPause.rawValue == 85)
+    #expect(Key.allCases.count == 11)
 }
 
 @Test("R6: valid hosts accepted", arguments: ["192.168.1.5", "10.0.0.1", "fe80::1", "::1"])

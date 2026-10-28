@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Пульт — Медиа и Навигация</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif}
+.k{display:flex;align-items:center;justify-content:center;border:1px solid #C9C9CE;background:#FFFFFF;color:#1D1D1F;border-radius:12px;cursor:pointer;padding:0;font:inherit;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.k:hover{background:#F5F5F7}
+.k:active{background:#E5E5EA}
+.k:focus-visible{outline:3px solid #0A5FD6;outline-offset:2px}
+.k svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.w{position:absolute;inset:0;border:0;border-radius:0;box-shadow:none}
+</style>
+</helmet>
+<div style="width: 340px; height: 540px; box-sizing: border-box; background: #ECECEC; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; color: #1D1D1F">
+  <div style="height: 28px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #E3E3E3; border-bottom: 1px solid #D1D1D6">
+    <div aria-hidden="true" style="display: flex; gap: 8px">
+      <div style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57"></div>
+      <div style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E"></div>
+      <div style="width: 12px; height: 12px; border-radius: 6px; background: #28C840"></div>
+    </div>
+    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 6px; margin-right: 52px; font-size: 12px; font-weight: 600">
+      <div aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: #1E8E3E"></div>
+      TCL Android TV
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px">
+    <div role="group" aria-label="Режим" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 2px; background: #D8D8DC; border-radius: 12px">
+      <button class="k" style="height: 34px; border: 0; border-radius: 10px; font-size: 13px; font-weight: 600; background: {{ seg.mediaBg }}; box-shadow: {{ seg.mediaShadow }}" aria-pressed="{{ isMedia }}" onClick="{{ showMedia }}">Медиа</button>
+      <button class="k" style="height: 34px; border: 0; border-radius: 10px; font-size: 13px; font-weight: 600; background: {{ seg.navBg }}; box-shadow: {{ seg.navShadow }}" aria-pressed="{{ isNav }}" onClick="{{ showNav }}">Навигация</button>
+    </div>
+
+    <sc-if value="{{ isMedia }}" hint-placeholder-val="{{ true }}">
+      <div style="height: auto; display: flex; flex-direction: column; gap: 12px; min-height: 308px; flex: 1 1 308px">
+        <button class="k" style="flex: 1 1 0; border-radius: 20px; border: 0; background: {{ accent }}; color: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,.18); min-height: 0; display: flex; align-items: center; justify-content: center" aria-label="Пауза / воспроизведение" title="Пауза / воспроизведение (пробел)" onClick="{{ k.play }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 64px; height: 64px; stroke-width: 1.6"><path d="M4 5l9 7-9 7z" fill="currentColor"></path><path d="M17 5v14M21 5v14"></path></svg></button>
+        <div style="height: {{ volHeight }}px; flex: 1 1 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; height: auto; min-height: 0; border-radius: 20px; overflow: hidden">
+          <button class="k" style="border-radius: 20px 0 0 20px; display: flex; align-items: center; justify-content: center" aria-label="Громкость меньше" title="Громкость меньше" onClick="{{ k.volDown }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke-width: 1.6"><path d="M3 9v6h4l5 4V5L7 9H3z"></path><path d="M16 12h6"></path></svg></button>
+          <button class="k" style="border-radius: 0 20px 20px 0; border-left-width: 0; display: flex; align-items: center; justify-content: center" aria-label="Громкость больше" title="Громкость больше" onClick="{{ k.volUp }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke-width: 1.6"><path d="M3 9v6h4l5 4V5L7 9H3z"></path><path d="M16 12h6M19 9v6"></path></svg></button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNav }}" hint-placeholder-val="{{ false }}">
+      <div style="position: relative; width: 100%; height: auto; border-radius: 20px; overflow: hidden; background: #C9C9CE; box-shadow: 0 1px 0 rgba(0,0,0,.06); min-height: 308px; flex: 1 1 308px">
+        <button class="k w" style="clip-path: polygon(1% 0, 99% 0, 78.7% 21.2%, 21.3% 21.2%); align-items: flex-start; padding-top: 8px" aria-label="Вверх" title="Вверх (↑)" onClick="{{ k.up }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 28px; height: 28px"><path d="M6 15l6-6 6 6"></path></svg></button>
+        <button class="k w" style="clip-path: polygon(21.3% 78.8%, 78.7% 78.8%, 99% 100%, 1% 100%); align-items: flex-end; padding-bottom: 8px" aria-label="Вниз" title="Вниз (↓)" onClick="{{ k.down }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 28px; height: 28px"><path d="M6 9l6 6 6-6"></path></svg></button>
+        <button class="k w" style="clip-path: polygon(0 1%, 21.2% 21.3%, 21.2% 78.7%, 0 99%); justify-content: flex-start; padding-left: 8px" aria-label="Влево" title="Влево (←)" onClick="{{ k.left }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 28px; height: 28px"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <button class="k w" style="clip-path: polygon(78.8% 21.3%, 100% 1%, 100% 99%, 78.8% 78.7%); justify-content: flex-end; padding-right: 8px" aria-label="Вправо" title="Вправо (→)" onClick="{{ k.right }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 28px; height: 28px"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <button class="k" style="position: absolute; left: 21.3%; top: 21.3%; width: 57.4%; height: 57.4%; border: 0; border-radius: 20px; background: #F2F2F7; box-shadow: none; display: flex; align-items: center; justify-content: center" aria-label="OK" title="OK (Return)" onClick="{{ k.ok }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 40px; height: 40px"><circle cx="12" cy="12" r="8"></circle></svg></button>
+      </div>
+    </sc-if>
+
+    
+  </div>
+
+  <div style="flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px 16px; border-top: 1px solid #D1D1D6">
+    <button class="k" style="height: 44px; color: #C4001A; border-radius: 12px; display: flex; align-items: center; justify-content: center" aria-label="Питание" title="Питание" onClick="{{ k.power }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 22px; height: 22px"><path d="M12 3v9"></path><path d="M6.3 6.3a8 8 0 1 0 11.4 0"></path></svg></button>
+    <button class="k" style="height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center" aria-label="Домой" title="Домой" onClick="{{ k.home }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 22px; height: 22px"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path></svg></button>
+    <button class="k" style="height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center" aria-label="Назад" title="Назад (Esc)" onClick="{{ k.back }}"><svg aria-hidden="true" viewBox="0 0 24 24" style="width: 22px; height: 22px"><path d="M9 14L4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+    
+    
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0A5FD6","options":["#0A5FD6","#1D1D1F","#B3261E","#1E7A3C"]},"volHeight":{"editor":"range","default":96,"min":56,"max":140,"step":4,"unit":"px"},"startTab":{"editor":"enum","options":["media","nav"],"default":"media"},"$preview":{"width":340,"height":540}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const tab = s.tab || this.props.startTab || 'media';
+    const isMedia = tab === 'media';
+    const on = '#FFFFFF', off = 'transparent', sh = '0 1px 2px rgba(0,0,0,.15)';
+    const send = (code, name) => () => this.setState({ last: name + ' · keyevent ' + code });
+    return {
+      isMedia, isNav: !isMedia,
+      showMedia: () => this.setState({ tab: 'media' }),
+      showNav: () => this.setState({ tab: 'nav' }),
+      seg: { mediaBg: isMedia ? on : off, navBg: isMedia ? off : on, mediaShadow: isMedia ? sh : 'none', navShadow: isMedia ? 'none' : sh },
+      accent: this.props.accent ?? '#0A5FD6',
+      volHeight: this.props.volHeight ?? 96,
+      last: s.last || '—',
+      k: {
+        power: send(26, 'POWER'), home: send(3, 'HOME'), back: send(4, 'BACK'),
+        input: send(178, 'TV_INPUT'), settings: send(176, 'SETTINGS'),
+        up: send(19, 'DPAD_UP'), down: send(20, 'DPAD_DOWN'), left: send(21, 'DPAD_LEFT'),
+        right: send(22, 'DPAD_RIGHT'), ok: send(23, 'DPAD_CENTER'),
+        volUp: send(24, 'VOLUME_UP'), volDown: send(25, 'VOLUME_DOWN'),
+        play: send(85, 'MEDIA_PLAY_PAUSE')
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status).
+// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected).
 import Testing
 import Foundation
 import Synchronization
@@ -88,4 +88,44 @@ func pressesAreOrdered() async {
     let b = Task { await m.press(.down) }
     await a.value; await b.value
     #expect(seen.withLock { $0 } == ["19", "20"])
+}
+
+@MainActor @Test("R9: tab defaults to media and persists")
+func tabPersists() {
+    let d = UserDefaults(suiteName: UUID().uuidString)!
+    #expect(make(Fake(), d).tab == .media)
+    make(Fake(), d).tab = .nav
+    #expect(make(Fake(), d).tab == .nav)
+}
+
+@MainActor @Test("R10: connectIfSaved with valid saved host connects")
+func connectIfSavedValid() async {
+    let f = Fake(["connected to 192.168.1.5:5555", "device"])
+    let m = make(f)
+    m.host = "192.168.1.5"
+    await m.connectIfSaved()
+    #expect(m.status == "Подключено")
+    #expect(m.isConnected)
+    #expect(f.recorded.count == 2)
+}
+
+@MainActor @Test("R10: connectIfSaved without valid host does nothing")
+func connectIfSavedInvalid() async {
+    for h in ["", "nope"] {
+        let f = Fake()
+        let m = make(f)
+        m.host = h
+        await m.connectIfSaved()
+        #expect(m.status == "Не подключено")
+        #expect(!m.isConnected)
+        #expect(f.recorded.isEmpty)
+    }
+}
+
+@MainActor @Test("R10: failed connect leaves isConnected false")
+func notConnectedOnFailure() async {
+    let m = make(Fake(["failed to connect to '192.168.1.5:5555'"]))
+    m.host = "192.168.1.5"
+    await m.connect()
+    #expect(!m.isConnected)
 }
