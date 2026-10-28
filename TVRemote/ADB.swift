@@ -68,8 +68,13 @@ struct ADB: Sendable {
         guard let bin = candidates.first(where: FileManager.default.isExecutableFile) else {
             throw ADBError(errorDescription: "adb not found — brew install android-platform-tools")
         }
-        return try await withCheckedThrowingContinuation { cont in
-            let p = Process()
+        return try await exec(bin, args)
+    }
+
+    // R22: a hung adb is terminated after `timeout` so the press queue keeps moving.
+    static func exec(_ bin: String, _ args: [String], timeout: Duration = .seconds(5)) async throws -> String {
+        try await withCheckedThrowingContinuation { cont in
+            nonisolated(unsafe) let p = Process()
             let pipe = Pipe()
             p.executableURL = URL(fileURLWithPath: bin)
             p.arguments = args
@@ -80,7 +85,11 @@ struct ADB: Sendable {
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 cont.resume(returning: String(decoding: data, as: UTF8.self))
             }
-            do { try p.run() } catch { cont.resume(throwing: error) }
+            do { try p.run() } catch { cont.resume(throwing: error); return }
+            Task {
+                try? await Task.sleep(for: timeout)
+                if p.isRunning { p.terminate() }
+            }
         }
     }
 }

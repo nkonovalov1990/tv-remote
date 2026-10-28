@@ -1,4 +1,4 @@
-// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing), R13-R16 (state call), R18 (self-heal).
+// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing), R13-R16 (state call), R18 (self-heal), R22 (timeout).
 import Testing
 import Foundation
 import Synchronization
@@ -154,4 +154,11 @@ func connectSelfHealGivesUp() async {
     let f = Fake([noRoute, "", noRoute])
     #expect(await f.adb.connect("192.168.1.5") == .failed(noRoute))
     #expect(f.recorded.count == 3)
+}
+
+@Test("R22: a hung process is terminated after the timeout")
+func execTimesOut() async throws {
+    let start = ContinuousClock.now
+    _ = try await ADB.exec("/bin/sleep", ["10"], timeout: .milliseconds(300))
+    #expect(ContinuousClock.now - start < .seconds(2))
 }

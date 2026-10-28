@@ -5,7 +5,12 @@ enum Tab: String { case media, nav }
 
 @Observable @MainActor
 final class RemoteModel {
-    var host: String { didSet { defaults.set(host, forKey: "host") } }
+    var host: String {
+        didSet {
+            let t = host.trimmingCharacters(in: .whitespacesAndNewlines) // R25
+            if t != host { host = t } else { defaults.set(host, forKey: "host") }
+        }
+    }
     var tab: Tab { didSet { defaults.set(tab.rawValue, forKey: "tab") } }
     var status = "Не подключено"
     var isConnected = false
@@ -13,6 +18,8 @@ final class RemoteModel {
     @ObservationIgnored private let adb: ADB
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var last: Task<Bool, Never>?
+    @ObservationIgnored private var inFlight = 0
+    var isBusy: Bool { inFlight > 0 } // R21: ContentView drops key auto-repeat while true
 
     init(adb: ADB = .live, defaults: UserDefaults = .standard) {
         self.adb = adb
@@ -44,9 +51,11 @@ final class RemoteModel {
     // Each press awaits the previous one so rapid taps reach the TV in order.
     func press(_ key: Key) async {
         let prev = last
+        inFlight += 1
         let t = Task {
+            defer { inFlight -= 1 }
             _ = await prev?.value
-            do { try await adb.press(key, host: host); return true } catch { status = Self.error(error.localizedDescription); return false }
+            do { try await adb.press(key, host: host); return true } catch { status = Self.error(error.localizedDescription); isConnected = false; return false }
         }
         last = t
         // Refresh outside the chain so a ~0.4 s poll never delays the next keyevent.

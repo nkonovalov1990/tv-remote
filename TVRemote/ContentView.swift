@@ -99,6 +99,7 @@ struct ContentView: View {
         }
         .onKeyPress(phases: [.down, .repeat]) { p in // R5'; ignored while typing the IP
             guard focus != .host, let key = shortcut(p.key) else { return .ignored }
+            if p.phase == .repeat && model.isBusy { return .handled } // R21
             Task { await model.press(key) }
             return .handled
         }

@@ -1,4 +1,4 @@
-// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected), R11 (Local Network hint), R17 (refresh).
+// Covers R1 (host persistence), R3 (connect -> status), R7 (error -> status), R9 (tab persistence), R10 (connectIfSaved, isConnected), R11 (Local Network hint), R17 (refresh), R20 (press failure disconnects), R21 (isBusy), R25 (host trim).
 import Testing
 import Foundation
 import Synchronization
@@ -216,4 +216,35 @@ func refreshDoesNotDelayNextPress() async {
     let b = Task { await m.press(.down) }
     await a.value; await b.value
     #expect(downAt.withLock { $0 }! < .milliseconds(300))
+}
+
+@MainActor @Test("R20: failed press drops isConnected so the error is shown")
+func pressFailureDisconnects() async {
+    let (m, _) = await connected(["error: device '192.168.1.5:5555' not found"])
+    #expect(m.isConnected)
+    await m.press(.home)
+    #expect(!m.isConnected)
+    #expect(m.status.hasPrefix("Ошибка:"))
+}
+
+@MainActor @Test("R21: isBusy is true while a press is in flight, false after")
+func busyWhilePressing() async throws {
+    let adb = ADB { _ in try await Task.sleep(for: .milliseconds(200)); return "" }
+    let m = RemoteModel(adb: adb, defaults: UserDefaults(suiteName: UUID().uuidString)!)
+    m.host = "192.168.1.5"
+    #expect(!m.isBusy)
+    let t = Task { await m.press(.down) }
+    try await Task.sleep(for: .milliseconds(50))
+    #expect(m.isBusy)
+    await t.value
+    #expect(!m.isBusy)
+}
+
+@MainActor @Test("R25: host is trimmed of whitespace and newlines, and saved trimmed")
+func hostTrimmed() {
+    let d = UserDefaults(suiteName: UUID().uuidString)!
+    let m = make(Fake(), d)
+    m.host = "192.168.1.5 \n"
+    #expect(m.host == "192.168.1.5")
+    #expect(d.string(forKey: "host") == "192.168.1.5")
 }

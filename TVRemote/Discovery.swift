@@ -36,8 +36,6 @@ final class Discovery {
         browser = b
     }
 
-    func stop() { browser?.cancel(); browser = nil }
-
     // Connecting is the simplest way to turn a Bonjour service into an IP.
     private func resolve(_ name: String, _ endpoint: NWEndpoint) {
         guard !tvs.contains(where: { $0.name == name }) else { return }
@@ -45,6 +43,8 @@ final class Discovery {
         (params.defaultProtocolStack.internetProtocol as? NWProtocolIP.Options)?.version = .v4
         let c = NWConnection(to: endpoint, using: params)
         c.stateUpdateHandler = { [weak self] state in
+            if case .failed = state { c.cancel() } // R23: don't leak connections to unresponsive TVs
+            if case .waiting = state { c.cancel() }
             guard case .ready = state else { return }
             let host: String? = if case .hostPort(let h, _) = c.currentPath?.remoteEndpoint { Self.hostString(h) } else { nil }
             c.cancel()
