@@ -55,10 +55,12 @@ final class RemoteModel {
 }
 
 extension RemoteModel {
+    nonisolated static let localNetworkHint = "macOS блокирует локальную сеть: Настройки → Конфиденциальность и безопасность → Локальная сеть → включите TV Remote"
+    // R19: deep link to System Settings › Privacy & Security › Local Network.
+    nonisolated static let localNetworkSettings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")!
+
     // R11: EHOSTUNREACH while the TV answers ping = macOS Local Network privacy blocking adb.
     static func error(_ m: String) -> String {
-        m.contains("No route to host")
-            ? "macOS блокирует локальную сеть: Настройки → Конфиденциальность и безопасность → Локальная сеть → включите TV Remote"
-            : "Ошибка: \(m)"
+        m.contains("No route to host") ? localNetworkHint : "Ошибка: \(m)"
     }
 }

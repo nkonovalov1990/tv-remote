@@ -1,4 +1,4 @@
-// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing), R13-R16 (state call).
+// Covers R3 (connect + auth check), R4/R4p (key codes / press), R6 (host validation), R7 (error surfacing), R13-R16 (state call), R18 (self-heal).
 import Testing
 import Foundation
 import Synchronization
@@ -139,4 +139,19 @@ func stateInvalidHost() async {
     let f = Fake()
     await #expect(throws: ADBError.self) { try await f.adb.state(host: "-H") }
     #expect(f.recorded.isEmpty)
+}
+
+@Test("R18: 'No route to host' restarts the adb server and retries connect once")
+func connectSelfHeals() async {
+    let f = Fake(["failed to connect to '192.168.1.5:5555': No route to host", "", "connected to 192.168.1.5:5555", "device"])
+    #expect(await f.adb.connect("192.168.1.5") == .connected)
+    #expect(f.recorded.map(\.first) == ["connect", "kill-server", "connect", "-s"])
+}
+
+@Test("R18: still unreachable after restart => failed, no endless retries")
+func connectSelfHealGivesUp() async {
+    let noRoute = "failed to connect to '192.168.1.5:5555': No route to host"
+    let f = Fake([noRoute, "", noRoute])
+    #expect(await f.adb.connect("192.168.1.5") == .failed(noRoute))
+    #expect(f.recorded.count == 3)
 }

@@ -130,7 +130,7 @@ func notConnectedOnFailure() async {
     #expect(!m.isConnected)
 }
 
-private let localNetworkHint = "macOS блокирует локальную сеть: Настройки → Конфиденциальность и безопасность → Локальная сеть → включите TV Remote"
+private let localNetworkHint = RemoteModel.localNetworkHint
 
 @MainActor @Test("R11: 'No route to host' on connect => Local Network hint")
 func connectNoRouteHint() async {

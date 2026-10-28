@@ -25,7 +25,12 @@ struct ADB: Sendable {
         guard Self.isValidHost(host) else { return .failed("invalid host") }
         do {
             // adb connect exits 0 even on failure, so parse the text.
-            let out = try await run(["connect", serial(host)]).trimmingCharacters(in: .whitespacesAndNewlines)
+            var out = try await run(["connect", serial(host)]).trimmingCharacters(in: .whitespacesAndNewlines)
+            // R18: a server orphaned by a quit app instance loses Local Network access; respawn it from this app once.
+            if out.contains("No route to host") {
+                _ = try await run(["kill-server"])
+                out = try await run(["connect", serial(host)]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
             if out.contains("failed to authenticate") { return .unauthorized }
             guard out.contains("connected to"),
                   !["failed", "unable", "cannot"].contains(where: out.contains) else { return .failed(out) }

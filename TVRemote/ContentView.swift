@@ -45,6 +45,10 @@ struct ContentView: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
+                if model.status == RemoteModel.localNetworkHint { // R19
+                    Button("Открыть настройки") { NSWorkspace.shared.open(RemoteModel.localNetworkSettings) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             // Own segmented control: the system one can't be made 32pt tall.
             HStack(spacing: 2) {
