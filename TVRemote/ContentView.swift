@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// One trapezoid of the D-pad (prototype v2 clip-paths); `quarter` = clockwise 90° turns from "up".
+/// One trapezoid of the D-pad; `quarter` = clockwise 90° turns from "up".
 struct Sector: Shape {
+    /// OK takes 25% of the D-pad area (half the side), so sectors are this deep.
+    static let depth = 0.25
     var quarter: Int
     func path(in r: CGRect) -> Path {
         var p = Path()
-        let pts = [(0.01, 0.0), (0.99, 0.0), (0.787, 0.212), (0.213, 0.212)].map { pt -> CGPoint in
+        // Exact diagonals: neighbours share an edge, so their 1pt strokes merge into an even hairline.
+        let pts = [(0.0, 0.0), (1.0, 0.0), (1 - Self.depth, Self.depth), (Self.depth, Self.depth)].map { pt -> CGPoint in
             var (x, y) = pt
             for _ in 0..<quarter { (x, y) = (1 - y, x) }
             return CGPoint(x: r.minX + x * r.width, y: r.minY + y * r.height)
@@ -43,11 +46,24 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Picker("Режим", selection: $model.tab) {
-                Text("Медиа").tag(Tab.media)
-                Text("Навигация").tag(Tab.nav)
+            // Own segmented control: the system one can't be made 32pt tall.
+            HStack(spacing: 2) {
+                ForEach([(Tab.media, "Медиа"), (.nav, "Навигация")], id: \.0) { tab, title in
+                    let on = model.tab == tab
+                    Button { model.tab = tab } label: {
+                        Text(title).font(.system(size: 13, weight: .semibold))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(on ? surface : .clear, in: RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(on ? 0.15 : 0), radius: 1, y: 1)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
             }
-            .pickerStyle(.segmented).labelsHidden()
+            .padding(2)
+            .frame(height: 32)
+            .background(Color(nsColor: .separatorColor), in: RoundedRectangle(cornerRadius: 10))
 
             Group {
                 switch model.tab {
@@ -59,10 +75,9 @@ struct ContentView: View {
 
             Divider()
             HStack(spacing: 8) {
-                key(.power, "power", "Питание", tint: .red, shape: RoundedRectangle(cornerRadius: 12))
-                    .frame(height: 44)
-                key(.home, "house", "Домой", shape: RoundedRectangle(cornerRadius: 12)).frame(height: 44)
-                key(.back, "arrow.uturn.backward", "Назад", shape: RoundedRectangle(cornerRadius: 12)).frame(height: 44)
+                key(.power, "power", "Питание", size: 16, tint: .red, shape: RoundedRectangle(cornerRadius: 10)).frame(height: 32)
+                key(.home, "house", "Домой", size: 16, shape: RoundedRectangle(cornerRadius: 10)).frame(height: 32)
+                key(.back, "arrow.uturn.backward", "Назад", size: 16, shape: RoundedRectangle(cornerRadius: 10)).frame(height: 32)
             }
         }
         .padding(16)
@@ -114,7 +129,7 @@ struct ContentView: View {
         VStack(spacing: 12) {
             Button { Task { await model.press(.playPause) } } label: {
                 RoundedRectangle(cornerRadius: 20).fill(accent)
-                    .overlay(Image(systemName: "playpause.fill").font(.system(size: 64)).foregroundStyle(.white))
+                    .overlay(Image(systemName: "playpause.fill").font(.system(size: 40)).foregroundStyle(.white))
                     .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
             }
             .buttonStyle(Press())
@@ -132,19 +147,21 @@ struct ContentView: View {
             (.down, "chevron.down", "Вниз", .bottom), (.left, "chevron.left", "Влево", .leading),
         ]
         return ZStack {
-            Color(nsColor: .separatorColor) // shows through the gaps between sectors
+            surface
             ForEach(edges.indices, id: \.self) { i in
-                key(edges[i].0, edges[i].1, edges[i].2, size: 28, shape: Sector(quarter: i), align: edges[i].3, inset: 8)
+                key(edges[i].0, edges[i].1, edges[i].2, size: 28, shape: Sector(quarter: i), align: edges[i].3, inset: side * Sector.depth / 2 - 14) // centre the 28pt glyph in the sector's depth
             }
             Button { Task { await model.press(.ok) } } label: {
-                RoundedRectangle(cornerRadius: 20).fill(Color(nsColor: .windowBackgroundColor))
+                Rectangle().fill(surface)
+                    .overlay(Rectangle().stroke(Color(nsColor: .separatorColor)))
                     .overlay(Image(systemName: "circle").font(.system(size: 40)).foregroundStyle(.primary))
             }
             .buttonStyle(Press())
-            .frame(width: side * 0.574, height: side * 0.574)
+            .frame(width: side * (1 - 2 * Sector.depth), height: side * (1 - 2 * Sector.depth)) // flush with the sectors' inner edges
             .help("OK (Return)").accessibilityLabel("OK")
         }
         .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(nsColor: .separatorColor)))
     }
 
     /// The repeated key look: surface fill + hairline border, icon aligned inside; only the shape is hit-testable.
