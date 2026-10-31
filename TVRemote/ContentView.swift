@@ -144,7 +144,7 @@ struct ContentView: View {
                 RoundedRectangle(cornerRadius: 20).fill(accent)
                     .overlay(VStack(spacing: 6) { // R16
                         Image(systemName: tv?.playing.map { $0 ? "pause.fill" : "play.fill" } ?? "playpause.fill").font(.system(size: 40))
-                        if let t = tv?.title { Text(t).font(.system(size: 13)).lineLimit(1).truncationMode(.tail).padding(.horizontal, 16) }
+                        if let t = tv?.title { Text(t).font(.system(size: 13)).lineLimit(3).multilineTextAlignment(.center).truncationMode(.tail).padding(.horizontal, 16) }
                     }.foregroundStyle(.white))
                     .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
             }
